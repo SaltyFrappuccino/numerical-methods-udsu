@@ -1,0 +1,508 @@
+## Вариант 11
+
+По условию $j=1.5+0.1\cdot11=2.6$, $m=1$. Значения остальных параметров зависят от задания.
+
+| Задания | $k$ | $l$ | Функция в `src/data.py` |
+| --- | ---: | ---: | --- |
+| 1–3, 5 | 2.6 | 2.5 | `standard_system()` |
+| 4 | 11 | 11 | `symmetric_system()` |
+| 6 | 0 | 0 | `tridiagonal_system()` |
+
+Для задания 4 используется симметричная матрица, для задания 6 — трёхдиагональная. При изменении $k$ и $l$ меняются коэффициенты матрицы и правые части. Ниже приведены отдельные небольшие примеры для разбора алгоритмов.
+
+## 1. Метод Гаусса
+
+**Дано**
+
+```python
+matrix = [
+    [2, 4, 4],
+    [2, 4, 2],
+    [4, 2, 2]
+]
+rhs = [22, 16, 14]
+```
+
+**Решение**
+
+Прямой ход приводит матрицу к верхнетреугольному виду. В каждом столбце выбираем максимальный по модулю ведущий элемент среди оставшихся строк.
+
+$$
+\left[\begin{array}{ccc|c}
+2&4&4&22\\
+2&4&2&16\\
+4&2&2&14
+\end{array}\right]
+\xrightarrow{R_1\leftrightarrow R_3}
+\left[\begin{array}{ccc|c}
+4&2&2&14\\
+2&4&2&16\\
+2&4&4&22
+\end{array}\right]
+$$
+
+В первом столбце коэффициент исключения для двух нижних строк равен $2/4=0.5$. Выполняем $R_2\leftarrow R_2-0.5R_1$, затем $R_3\leftarrow R_3-0.5R_1$.
+
+$$
+\left[\begin{array}{ccc|c}
+4&2&2&14\\
+0&3&1&9\\
+0&3&3&15
+\end{array}\right]
+$$
+
+Для второго столбца коэффициент исключения равен $3/3=1$. Вычитаем вторую строку из третьей.
+
+$$
+\left[\begin{array}{ccc|c}
+4&2&2&14\\
+0&3&1&9\\
+0&0&2&6
+\end{array}\right]
+$$
+
+Этим действиям соответствует участок `gauss_elimination()`:
+
+```python
+factor = a[row][column] / a[column][column]  # Коэффициент исключения
+for index in range(column, size):            # Элементы текущей строки
+    a[row][index] -= factor * a[column][index]
+b[row] -= factor * b[column]                 # Свободный член той же строки
+a[row][column] = 0.0                        # Исключённый коэффициент
+```
+
+`column` выбирает столбец с исключаемым элементом, `row` — строку, которую меняем. `index` перебирает её коэффициенты от текущего столбца до последнего.
+
+Обратная подстановка начинается с последнего уравнения:
+
+$$
+x_3=6/2=3,\qquad
+x_2=(9-3)/3=2,\qquad
+x_1=(14-2\cdot2-2\cdot3)/4=1.
+$$
+
+В программе используется `back_substitution(a, b)`. Она перебирает строки снизу вверх и вычитает из правой части сумму слагаемых с уже найденными неизвестными.
+
+**Ответ** $x=(1,2,3)$.
+
+## 2. Метод Жордана–Гаусса
+
+**Дано**
+
+```python
+matrix = [
+    [2, 1],
+    [1, 1]
+]
+rhs = [5, 3]
+```
+
+**Решение**
+
+На каждом шаге делим ведущую строку на ведущий элемент. Затем исключаем текущую неизвестную из всех остальных строк. Получаем единичную матрицу.
+
+$$
+\left[\begin{array}{cc|c}2&1&5\\1&1&3\end{array}\right]
+\xrightarrow{R_1/2}
+\left[\begin{array}{cc|c}1&0.5&2.5\\1&1&3\end{array}\right]
+\xrightarrow{R_2-R_1}
+\left[\begin{array}{cc|c}1&0.5&2.5\\0&0.5&0.5\end{array}\right]
+$$
+
+$$
+\xrightarrow{R_2/0.5}
+\left[\begin{array}{cc|c}1&0.5&2.5\\0&1&1\end{array}\right]
+\xrightarrow{R_1-0.5R_2}
+\left[\begin{array}{cc|c}1&0&2\\0&1&1\end{array}\right]
+$$
+
+В `gauss_jordan()` нормировка и исключение записаны так:
+
+```python
+pivot = a[column][column]
+for index in range(size):
+    a[column][index] /= pivot       # Коэффициенты ведущей строки
+b[column] /= pivot                 # Её правая часть
+
+for row in range(size):            # Все строки, сверху и снизу
+    if row == column:
+        continue                   # Ведущую строку пропускаем
+    factor = a[row][column]
+    for index in range(size):
+        a[row][index] -= factor * a[column][index]
+    b[row] -= factor * b[column]
+    a[row][column] = 0.0
+```
+
+После исключения всех столбцов слева стоит единичная матрица. Метод возвращает `b`, обратная подстановка не требуется.
+
+**Ответ** $x=(2,1)$.
+
+## 3. LU-разложение
+
+**Дано**
+
+```python
+matrix = [
+    [2, 1, 0],
+    [4, 5, 1],
+    [2, -2, 1]
+]
+rhs = [4, 17, 1]
+```
+
+**Решение**
+
+Разлагаем $A=LU$. Матрица $L$ нижнетреугольная с единицами на диагонали, $U$ верхнетреугольная.
+
+$$
+\underbrace{\begin{pmatrix}2&1&0\\4&5&1\\2&-2&1\end{pmatrix}}_A
+=
+\underbrace{\begin{pmatrix}1&0&0\\2&1&0\\1&-1&1\end{pmatrix}}_L
+\underbrace{\begin{pmatrix}2&1&0\\0&3&1\\0&0&2\end{pmatrix}}_U.
+$$
+
+Первая строка $U$ равна $(2,1,0)$. Первый столбец $L$ ниже диагонали: $L_{21}=4/2=2$, $L_{31}=2/2=1$.
+
+Далее вычисляем неизвестные элементы, учитывая уже найденные слагаемые произведения $LU$:
+
+$$
+\begin{aligned}
+U_{22}&=5-L_{21}U_{12}=5-2\cdot1=3,\\
+L_{32}&=\frac{-2-L_{31}U_{12}}{U_{22}}=\frac{-2-1}{3}=-1,\\
+U_{33}&=1-(L_{31}U_{13}+L_{32}U_{23})=1-(0-1)=2.
+\end{aligned}
+$$
+
+В коде переменная `known` хранит сумму уже вычисленных слагаемых:
+
+```python
+# Вычисление элемента U[row][column]
+known = 0.0
+for index in range(row):
+    known += lower[row][index] * upper[index][column]
+upper[row][column] = matrix[row][column] - known
+
+# Вычисление элемента L[next_row][row]
+known = 0.0
+for index in range(row):
+    known += lower[next_row][index] * upper[index][row]
+lower[next_row][row] = (matrix[next_row][row] - known) / upper[row][row]
+```
+
+Теперь $LUx=b$. Вводим промежуточный вектор $y=Ux$ и последовательно решаем две треугольные системы.
+
+$$
+Ly=b:\quad
+\begin{cases}
+y_1=4,\\
+2y_1+y_2=17,\\
+y_1-y_2+y_3=1
+\end{cases}
+\quad\Longrightarrow\quad y=(4,9,6).
+$$
+
+$$
+Ux=y:\quad
+\begin{cases}
+2x_1+x_2=4,\\
+3x_2+x_3=9,\\
+2x_3=6
+\end{cases}
+\quad\Longrightarrow\quad x=(1,2,3).
+$$
+
+LU-разложение в этой реализации выполняется без перестановки строк. Если очередной диагональный элемент $U$ равен нулю или слишком мал, функция останавливается.
+
+Код решения:
+
+```python
+y = forward_substitution(lower, rhs)   # Решаем Ly = b, сверху вниз
+return back_substitution(upper, y)      # Решаем Ux = y, снизу вверх
+```
+
+**Ответ** $x=(1,2,3)$.
+
+## 4. Метод квадратных корней
+
+**Дано**
+
+```python
+matrix = [
+    [4, 2],
+    [2, -3]
+]
+rhs = [8, -4]
+```
+
+**Решение**
+
+Для симметричной матрицы строим разложение $A=S^TDS$. Матрица $S$ верхнетреугольная, $D$ содержит знаки $+1$ или $-1$ на диагонали. В Python диагональ $D$ хранится в списке `signs`. Нулевые ведущие значения при разложении недопустимы для этой реализации.
+
+На первом шаге $diagonal=4$. Значит, $signs[0]=1$, $S_{11}=\sqrt4=2$ и $S_{12}=2/(1\cdot2)=1$.
+
+На втором шаге вычитаем вклад ранее найденного элемента:
+
+$$
+diagonal=-3-1\cdot1^2=-4,\qquad
+signs[1]=-1,\qquad S_{22}=\sqrt{|-4|}=2.
+$$
+
+Получаем:
+
+$$
+S=\begin{pmatrix}2&1\\0&2\end{pmatrix},\qquad
+D=\begin{pmatrix}1&0\\0&-1\end{pmatrix}.
+$$
+
+Код вычисления диагонали и знака:
+
+```python
+diagonal = matrix[row][row]
+for index in range(row):
+    diagonal -= signs[index] * upper[index][row] ** 2
+
+if diagonal > 0:
+    signs[row] = 1.0
+else:
+    signs[row] = -1.0
+upper[row][row] = sqrt(abs(diagonal))
+```
+
+Здесь `upper[index][row]` выбирает ранее найденные элементы текущего столбца $S$. Элементы справа от диагонали вычисляются отдельно:
+
+```python
+known = 0.0
+for index in range(row):
+    known += signs[index] * upper[index][row] * upper[index][column]
+upper[row][column] = (matrix[row][column] - known) / (signs[row] * upper[row][row])
+```
+
+После разложения решаем $S^TDy=b$, затем $Sx=y$:
+
+$$
+\underbrace{\begin{pmatrix}2&0\\1&-2\end{pmatrix}}_{S^TD}
+\begin{pmatrix}y_1\\y_2\end{pmatrix}
+=\begin{pmatrix}8\\-4\end{pmatrix}
+\quad\Longrightarrow\quad y=(4,4).
+$$
+
+$$
+\begin{pmatrix}2&1\\0&2\end{pmatrix}
+\begin{pmatrix}x_1\\x_2\end{pmatrix}
+=\begin{pmatrix}4\\4\end{pmatrix}
+\quad\Longrightarrow\quad x=(1,2).
+$$
+
+Первая подстановка в `solve_square_roots()`:
+
+```python
+known = 0.0
+for column in range(row):
+    known += upper[column][row] * signs[column] * y[column]
+y[row] = (rhs[row] - known) / (upper[row][row] * signs[row])
+```
+
+Перестановка индексов в `upper[column][row]` соответствует чтению элемента транспонированной матрицы $S^T$. Вторая подстановка выполняется через `back_substitution(upper, y)`.
+
+**Ответ** $x=(1,2)$.
+
+## 5. Метод ортогонализации
+
+**Дано**
+
+```python
+matrix = [
+    [1, 0],
+    [2, 1]
+]
+rhs = [1, 0]
+```
+
+**Решение**
+
+Из $Ax=b$ получаем $Ax-b=0$. К строкам матрицы дописываем $-b$, затем добавляем вектор $(0,0,1)$:
+
+$$
+a_1=(1,0,-1),\quad a_2=(2,1,0),\quad a_3=(0,0,1).
+$$
+
+Вектор $(x_1,x_2,1)$ должен быть ортогонален $a_1$ и $a_2$. Процесс Грамма–Шмидта строит ортонормированный базис из трёх векторов. Для каждого следующего вектора вычитаются проекции на все предыдущие базисные векторы, затем результат нормируется.
+
+Первый вектор только нормируем:
+
+$$
+q_1=\frac{a_1}{\|a_1\|}=\frac{(1,0,-1)}{\sqrt2}.
+$$
+
+Из второго вычитаем проекцию на $q_1$:
+
+$$
+\begin{aligned}
+projection&=a_2\cdot q_1=\sqrt2,\\
+u_2&=a_2-projection\cdot q_1=(2,1,0)-(1,0,-1)=(1,1,1),\\
+q_2&=\frac{u_2}{\|u_2\|}=\frac{(1,1,1)}{\sqrt3}.
+\end{aligned}
+$$
+
+Для третьего вектора вычитаем две проекции последовательно:
+
+$$
+\begin{aligned}
+a_3-(a_3\cdot q_1)q_1 &= (\tfrac12,0,\tfrac12),\\
+(\tfrac12,0,\tfrac12)-((\tfrac12,0,\tfrac12)\cdot q_2)q_2
+&=(\tfrac16,-\tfrac13,\tfrac16),\\
+q_3&=\frac{(1,-2,1)}{\sqrt6}.
+\end{aligned}
+$$
+
+Ключевой цикл из `solve_orthogonalization()`:
+
+```python
+for row in rows:
+    vector = row[:]                         # Копия исходного вектора
+    for previous in basis:                  # Все готовые единичные векторы
+        projection = dot(vector, previous)  # Скалярное произведение
+        for index in range(len(vector)):
+            vector[index] -= projection * previous[index]
+
+    length = euclidean_norm(vector)         # Длина после вычитания проекций
+    if length < 1e-14:
+        raise ValueError("При ортогонализации получен нулевой вектор")
+    for index in range(len(vector)):
+        vector[index] /= length             # Длина нового вектора равна 1
+    basis.append(vector)
+```
+
+`dot(vector, previous)` возвращает коэффициент проекции. Умножение этого числа на `previous` даёт вектор проекции. Нормировка упрощает формулу: для единичного `previous` его скалярное произведение с самим собой равно 1.
+
+Последний $q_3$ ортогонален первым двум расширенным строкам. Делим его первые две координаты на последнюю:
+
+$$
+x_1=\frac{1/\sqrt6}{1/\sqrt6}=1,\qquad
+x_2=\frac{-2/\sqrt6}{1/\sqrt6}=-2.
+$$
+
+```python
+last = basis[-1]  # Последний базисный вектор
+for index in range(size):
+    result.append(last[index] / last[-1])
+```
+
+Для системы с $n$ неизвестными строятся $n+1$ ортонормированных векторов размерности $n+1$. Метод предполагает невырожденную исходную матрицу.
+
+**Ответ** $x=(1,-2)$.
+
+## 6. Метод прогонки
+
+**Дано**
+
+```python
+matrix = [
+    [2, 1, 0],
+    [1, 3, 1],
+    [0, 1, 2]
+]
+rhs = [4, 10, 8]
+```
+
+**Решение**
+
+Матрица трёхдиагональная. Строка системы имеет вид
+
+$$
+l_ix_{i-1}+d_ix_i+u_ix_{i+1}=r_i.
+$$
+
+Прямая прогонка последовательно выражает неизвестную через следующую. В формулах $i$ начинается с 1, а индексы списков Python — с 0:
+
+$$
+x_i=\alpha_i x_{i+1}+\beta_i.
+$$
+
+Из первого уравнения $2x_1+x_2=4$ получаем
+
+$$
+x_1=-0.5x_2+2,\qquad \alpha_1=-0.5,\quad\beta_1=2.
+$$
+
+Это вычисляют первые строки `thomas_method()`:
+
+```python
+alpha[0] = -matrix[0][1] / matrix[0][0]  # -1 / 2 = -0.5
+beta[0] = rhs[0] / matrix[0][0]         # 4 / 2 = 2
+```
+
+Во второе уравнение $x_1+3x_2+x_3=10$ подставляем найденное выражение для $x_1$:
+
+$$
+-0.5x_2+2+3x_2+x_3=10
+\quad\Longrightarrow\quad
+2.5x_2+x_3=8.
+$$
+
+$$
+x_2=-0.4x_3+3.2,\qquad\alpha_2=-0.4,\quad\beta_2=3.2.
+$$
+
+В коде при `row = 1`:
+
+```python
+lower = matrix[row][row - 1]  # 1, слева от главной диагонали
+upper = 0.0
+if row < size - 1:
+    upper = matrix[row][row + 1]  # 1 при row=1, справа от диагонали
+denominator = matrix[row][row] + lower * alpha[row - 1]  # 3 - 0.5 = 2.5
+alpha[row] = -upper / denominator                       # -0.4
+beta[row] = (rhs[row] - lower * beta[row - 1]) / denominator  # 3.2
+```
+
+`denominator` — коэффициент при текущем $x_i$ после исключения $x_{i-1}$. В программе он стоит в знаменателях формул для `alpha` и `beta`.
+
+Третье уравнение $x_2+2x_3=8$:
+
+$$
+-0.4x_3+3.2+2x_3=8
+\quad\Longrightarrow\quad
+1.6x_3=4.8
+\quad\Longrightarrow\quad x_3=3.
+$$
+
+На последнем шаге `upper = 0`, поэтому `alpha[2] = 0`, `beta[2] = 3`. После прямой прогонки:
+
+```python
+alpha = [-0.5, -0.4, 0.0]
+beta = [2.0, 3.2, 3.0]
+```
+
+Обратная прогонка идёт от последней строки к первой:
+
+$$
+x_3=3,\qquad x_2=-0.4\cdot3+3.2=2,\qquad x_1=-0.5\cdot2+2=1.
+$$
+
+```python
+solution[-1] = beta[-1]
+for row in range(size - 2, -1, -1):
+    solution[row] = alpha[row] * solution[row + 1] + beta[row]
+```
+
+**Ответ** $x=(1,2,3)$.
+
+## Проверка решения
+
+В каждом методе проверяется исходная для него система. Вектор невязки $r=Ax-b$. Программа выводит максимальное отклонение по модулю:
+
+$$
+\|r\|_\infty=\max_i|(Ax-b)_i|.
+$$
+
+```python
+product = mat_vec(matrix, solution)  # Вычисляем A*x
+difference = []
+for index in range(len(rhs)):
+    difference.append(product[index] - rhs[index])
+return vector_norm(difference)
+```
+
+Невязка, близкая к нулю, означает, что подстановка найденного вектора хорошо удовлетворяет исходным уравнениям. Невязка сама по себе не равна погрешности найденного $x$. Для каждого задания используются его собственные `matrix` и `rhs`.
