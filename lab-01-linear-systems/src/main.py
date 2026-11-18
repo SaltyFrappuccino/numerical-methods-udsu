@@ -1,9 +1,10 @@
 from .data import standard_system, symmetric_system, tridiagonal_system
-from .linear_methods import gauss_elimination, gauss_jordan, solve_lu
+from .linear_methods import gauss_elimination, gauss_jordan, solve_lu, simple_iterations
 from .matrix_utils import residual
 from .special_methods import solve_orthogonalization, solve_square_roots, thomas_method
 
 
+# Выводит матрицу и правую часть системы.
 def print_system(matrix, rhs):
     print("A =")
     for row in matrix:
@@ -19,6 +20,7 @@ def print_system(matrix, rhs):
     print()
 
 
+# Показывает найденный вектор и невязку относительно исходной системы.
 def print_result(title, matrix, rhs, solution):
     print(title)
     values = []
@@ -31,8 +33,9 @@ def print_result(title, matrix, rhs, solution):
     print()
 
 
+# Выполняет семь методов решения СЛАУ, вариант 11.
 def main():
-    print("Лабораторная работа 1, вариант 11, задания 1-6")
+    print("Лабораторная работа 1, вариант 11, задания 1-7")
     print()
 
     matrix, rhs = standard_system()
@@ -64,3 +67,40 @@ def main():
 
     solution = thomas_method(tridiagonal, tridiagonal_rhs)
     print_result("6. Метод прогонки", tridiagonal, tridiagonal_rhs, solution)
+
+    print("Задание 7")
+    print_system(matrix, rhs)
+
+    solution, B, c, q, history, error_bound = simple_iterations(
+        matrix, rhs, eps=1e-6, max_iterations=10000, tau=0.1
+    )
+
+    print("B = I - 0.1*A")
+    for row in B:
+        text = ""
+        for value in row:
+            text += f" {value:8.4f}"
+        print(text)
+
+    print("c = 0.1*b")
+    text = ""
+    for value in c:
+        text += f" {value:.5f}"
+    print(text)
+    print()
+
+    print("Последовательные приближения:")
+    for iteration, values, bound in history:
+        line = f"k={iteration:3d}:"
+        for value in values:
+            line += f" {value: .8f}"
+        if bound is not None:
+            line += f"  оценка={bound:.2e}"
+        print(line)
+
+    print()
+    print_result("7. Метод простых итераций", matrix, rhs, solution)
+    print(f"tau = 0.1; q = {q:.6f}; q < 1")
+    print(f"Точность = 1e-6; итераций = {len(history) - 1}")
+    print(f"Апостериорная оценка погрешности = {error_bound:.3e}")
+
