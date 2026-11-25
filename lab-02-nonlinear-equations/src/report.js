@@ -160,7 +160,6 @@ function surface() {
     const ca = Math.cos(camera.azimuth), sa = Math.sin(camera.azimuth);
     const ce = Math.cos(camera.elevation), se = Math.sin(camera.elevation);
 
-    // Ортографическая проекция после поворота вокруг вертикальной оси.
     function project(x, y, z) {
         const u = 2 * (x - xMin) / (xMax - xMin) - 1;
         const v = 1.65 * (y - yMin) / (yMax - yMin) - 0.825;
@@ -183,7 +182,6 @@ function surface() {
         ctx.font = '12px Arial';
         ctx.fillText(text, p[0] + dx, p[1] + dy);
     }
-    // Сетка в плоскости Ψ = 0.
     for (let x = -2; x <= 0.5; x += 0.5) {
         drawLine([project(x, yMin, 0), project(x, yMax, 0)], '#dce0e5');
         label(project(x, yMin, 0), x.toFixed(1), -10, 17);
@@ -199,7 +197,6 @@ function surface() {
     label(project(xMin, yMin, zMax), 'Ψ', -14, -8);
     for (let z = 0; z <= zMax; z += 1) label(project(xMin, yMin, z), String(z), -18, 4);
 
-    // Ячейки поверхности рисуются от дальних к ближним.
     const cells = [];
     for (let j = 0; j < mesh.y.length - 1; j += 2) {
         for (let i = 0; i < mesh.x.length - 1; i += 2) {
@@ -222,7 +219,7 @@ function surface() {
         ctx.fill();
         ctx.stroke();
     }
-    // Траектории показываем поверх сетки, чтобы все итерации были видны.
+    
     for (const method of data.system) {
         const points = method.history.map(row => project(row[1], row[2], row[4]));
         drawLine(points, color(method), 2.6);
