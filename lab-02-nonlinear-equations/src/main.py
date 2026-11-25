@@ -13,6 +13,7 @@ from .scalar_methods import bisection, chords, combined, newton, simple_iteratio
 from .system_methods import gradient_descent, newton_system
 
 
+# Задания 1-8, решение уравнения и системы варианта 11.
 def main():
     print("Лабораторная работа 2, вариант 11")
     print("f(x) = -ln(x) + 0.2*x*x - 1, отрезок [2, 4]")
@@ -38,8 +39,8 @@ def main():
     print_scalar_result("4. Комбинированный метод", history)
     scalar_results.append(["Комбинированный", x, history])
 
-    print(f"phi(x) = sqrt(5*(ln(x) + 1)), q = {iteration_derivative(LEFT):.6f}")
-    x, history = simple_iterations(LEFT, EPS, MAX_ITERATIONS)
+    print(f"phi(x) = sqrt(5*(ln(x) + 1)), x0 = 3, q = {iteration_derivative(LEFT):.6f}")
+    x, history = simple_iterations(3.0, EPS, MAX_ITERATIONS)
     print_scalar_result("5. Простые итерации", history)
     scalar_results.append(["Простые итерации", x, history])
 

@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ЛР №2. Задание 8</title>
+<style>__REPORT_CSS__</style>
+</head>
+<body>
+<main>
+    <header>
+        <h1>Лабораторная работа №2</h1>
+        <div>Вариант 11 · Задание 8. Сравнение результатов</div>
+    </header>
+    <nav>
+        <button id="tab-scalar" aria-selected="true">Нелинейное уравнение</button>
+        <button id="tab-system" aria-selected="false">Система уравнений</button>
+    </nav>
+    <section id="scalar">
+        <h2>Уравнение</h2>
+        <div class="formula">f(x) = −ln x + 0,2x² − 1 = 0, &nbsp; x ∈ [2; 4]</div>
+        <p class="params">ε = 10⁻⁸; критерий остановки: оценка погрешности ≤ ε/2.</p>
+        <div id="scalar-summary" class="table-scroll"></div>
+        <p id="scalar-spread" class="params"></p>
+        <div class="two-col">
+            <article><h3>Число уточнений</h3><div id="scalar-bars" class="chart medium"></div></article>
+            <article>
+                <div class="chart-head"><h3>Сходимость</h3><select id="scalar-mode"><option value="2">Невязка |f(x)|</option><option value="3">Оценка погрешности</option></select></div>
+                <div id="scalar-conv" class="chart medium"></div>
+            </article>
+        </div>
+        <article>
+            <h3>Приближения к корню</h3>
+            <div class="controls"><label for="scalar-select">Метод</label><select id="scalar-select"></select><label for="scalar-step">k = <output id="scalar-k"></output></label><input id="scalar-step" type="range" min="0" step="1"><button class="small" id="scalar-fit">Весь отрезок</button><button class="small" id="scalar-root">К корню</button></div>
+            <div id="scalar-graph" class="chart large"></div>
+            <div id="scalar-current" class="current"></div>
+            <details><summary>Таблица приближений</summary><div id="scalar-history" class="table-scroll history"></div></details>
+        </article>
+    </section>
+    <section id="system" hidden>
+        <h2>Система уравнений</h2>
+        <div class="formula system-formula"><span>sin(−x + π/2 + 2) + y = 0,</span><span>cos(−y + π/2 − 0,5) − x − 1 = 0.</span></div>
+        <p class="params">x₀ = −1; y₀ = 0; ε = 10⁻⁸; критерий остановки: max(|F₁|, |F₂|) ≤ ε/2.</p>
+        <div id="system-summary" class="table-scroll"></div>
+        <p id="system-spread" class="params"></p>
+        <div class="two-col">
+            <article><h3>Число уточнений</h3><div id="system-bars" class="chart medium"></div></article>
+            <article>
+                <div class="chart-head"><h3>Сходимость</h3><select id="system-mode"><option value="3">Максимальная невязка</option><option value="4">Ψ = F₁² + F₂²</option></select></div>
+                <div id="system-conv" class="chart medium"></div>
+            </article>
+        </div>
+        <article>
+            <h3>Траектории приближений</h3>
+            <div class="controls"><label for="system-select">Метод</label><select id="system-select"></select><label for="system-step">k = <output id="system-k"></output></label><input id="system-step" type="range" min="0" step="1"><button class="small" id="system-fit">Вся область</button><button class="small" id="system-root">К решению</button></div>
+            <div id="system-graph" class="chart large"></div>
+            <div id="system-current" class="current"></div>
+            <details><summary>Таблица приближений</summary><div id="system-history" class="table-scroll history"></div></details>
+        </article>
+        <article>
+            <div class="chart-head"><h3>Поверхность Ψ(x, y)</h3><div class="controls"><select id="surface-mode" aria-label="Управление поверхностью"><option value="rotate">Вращение</option><option value="pan">Перемещение</option></select><button class="small" id="surface-reset">Сбросить вид</button><button class="small" id="surface-save">PNG</button></div></div>
+            <canvas id="surface" class="chart surface" aria-label="Трёхмерная поверхность Пси и траектории"></canvas>
+        </article>
+    </section>
+</main>
+<!-- __PLOTLY_LICENSE__ -->
+<script>__PLOTLY__</script>
+<script id="report-data" type="application/json">__REPORT_DATA__</script>
+<script>__REPORT_JS__</script>
+</body>
+</html>

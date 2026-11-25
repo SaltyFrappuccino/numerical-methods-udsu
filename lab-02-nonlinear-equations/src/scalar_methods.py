@@ -130,26 +130,34 @@ def combined(left, right, eps, max_iterations):
     raise RuntimeError("Комбинированный метод, превышен предел итераций")
 
 
-# Задание 5, последовательно подставляем x в функцию итерации.
+# Задание 5, последовательные приближения с оценкой погрешности.
 def simple_iterations(x, eps, max_iterations):
     q = iteration_derivative(LEFT)
-    if q >= 1.0:
-        raise ValueError("Условие сжатия не выполнено")
-    error = abs(equation(x)) / derivative(LEFT)
-    history = []
+    if not 0.0 < q < 1.0:
+        raise ValueError("Условие сходимости не выполнено")
+    if not LEFT <= x <= RIGHT:
+        raise ValueError("Начальное приближение вне отрезка")
+    if not LEFT <= iteration_function(LEFT) <= RIGHT:
+        raise ValueError("Функция итераций выходит за отрезок слева")
+    if not LEFT <= iteration_function(RIGHT) <= RIGHT:
+        raise ValueError("Функция итераций выходит за отрезок справа")
 
-    for iteration in range(max_iterations + 1):
-        if x < LEFT or x > RIGHT:
-            raise RuntimeError("Простые итерации вышли за отрезок [2, 4]")
-        value = equation(x)
-        history.append([iteration, x, abs(value), error])
+    initial_error = abs(equation(x)) / derivative(LEFT)
+    history = [[0, x, abs(equation(x)), initial_error]]
+
+    for iteration in range(1, max_iterations + 1):
+        x_next = iteration_function(x)
+        if not LEFT <= x_next <= RIGHT:
+            raise RuntimeError("Простые итерации вышли за отрезок")
+
+        difference = abs(x_next - x)
+        error = q * difference / (1.0 - q)
+        residual = abs(equation(x_next))
+        history.append([iteration, x_next, residual, error])
+
         if error <= eps / 2.0:
-            return x, history
-        if iteration == max_iterations:
-            break
+            return x_next, history
 
-        next_x = iteration_function(x)
-        error = q * abs(next_x - x) / (1.0 - q)
-        x = next_x
+        x = x_next
 
     raise RuntimeError("Простые итерации, превышен предел итераций")
